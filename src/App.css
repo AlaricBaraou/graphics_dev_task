@@ -13,6 +13,13 @@
   }
 }
 
+#uicont{
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 1;
+}
+
 .App-header {
   background-color: #282c34;
   min-height: 100vh;
@@ -26,6 +33,19 @@
 
 .App-link {
   color: #61dafb;
+}
+
+ul {
+  list-style: none;
+  text-align: left;
+}
+
+ul li {
+  color: #fff;
+}
+
+ul li.selected {
+  color: red;
 }
 
 @keyframes App-logo-spin {
