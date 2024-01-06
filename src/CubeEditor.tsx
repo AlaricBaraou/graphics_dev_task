@@ -9,6 +9,7 @@ import {
 } from "babylonjs";
 import { setStore, useStore } from "./stores/store";
 import { createArrow } from "./createArrow";
+import { setVisibility } from "./setVisibility";
 
 /* @ts-ignore */
 function updateCubeEditor(cubeEditor, currentSelectedMesh) {
@@ -131,6 +132,8 @@ export const CubeEditor = () => {
     widthArrowGroup.parent = group;
     depthArrowGroup.parent = group;
 
+    setVisibility(group, false);
+
     setStore({
       cubeEditor: {
         group,
@@ -175,7 +178,10 @@ export const CubeEditor = () => {
     const isCube = currentSelected.type === "cube"; // Example condition
     const currentSelectedMesh = currentSelected.mesh;
     if (isCube) {
+      setVisibility(cubeEditor.group, true);
       updateCubeEditor(cubeEditor, currentSelectedMesh);
+    } else {
+      setVisibility(cubeEditor.group, false);
     }
 
     //check if currentSelectedMesh (babylon Mesh) has been created from CreateCylinder

@@ -5,7 +5,26 @@ const useStoreImpl = create((set, get) => {
   return {
     scene: null,
     canvas: null,
-    allMeshes: {},
+    allMeshes: {
+      demoCube: {
+        id: "demoCube",
+        name: "Cube",
+        type: "cube",
+        rotation: [0, Math.PI, 0],
+      },
+      demoIcosphere: {
+        id: "demoIcosphere",
+        name: "IcoSphere",
+        type: "icosphere",
+        position: [-2, 0, 0],
+      },
+      demoCylinder: {
+        id: "demoCylinder",
+        name: "Cylinder",
+        type: "cylinder",
+        position: [2, 0, 0],
+      },
+    },
     highlightLayer: null,
     currentSelected: null,
     minCylinderDiameter: 0.1,
@@ -18,7 +37,14 @@ const useStoreImpl = create((set, get) => {
     maxCubeWidth: 2,
     minCubeDepth: 0.1,
     maxCubeDepth: 2,
-    storeMesh: (mesh) => {
+    updateMesh: (meshId, props) => {
+      const { allMeshes } = get();
+      allMeshes[meshId] = Object.assign({}, allMeshes[meshId], props);
+      set({
+        allMeshes,
+      });
+    },
+    addMesh: (mesh) => {
       const { allMeshes } = get();
       allMeshes[mesh.id] = mesh;
       set({
@@ -26,24 +52,22 @@ const useStoreImpl = create((set, get) => {
       });
     },
     setSelected: (id, isSelected) => {
-      const { allMeshes, highlightLayer } = get();
+      const { allMeshes, updateMesh } = get();
       if (allMeshes[id]) {
         if (isSelected) {
           //unselect all others
-          highlightLayer.removeAllMeshes();
           for (const meshId in allMeshes) {
-            allMeshes[meshId] = {
-              ...allMeshes[meshId],
-              selected: false,
-            };
+            if (allMeshes[meshId].selected) {
+              updateMesh(meshId, {
+                selected: false,
+              });
+            }
           }
         }
 
-        allMeshes[id] = {
-          ...allMeshes[id],
+        updateMesh(id, {
           selected: isSelected,
-        };
-        highlightLayer.addMesh(allMeshes[id].mesh, Color3.White());
+        });
 
         set({
           allMeshes,

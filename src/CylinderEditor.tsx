@@ -9,6 +9,7 @@ import {
 } from "babylonjs";
 import { setStore, useStore } from "./stores/store";
 import { createArrow } from "./createArrow";
+import { setVisibility } from "./setVisibility";
 
 /* @ts-ignore */
 function updateCylinderEditor(cylinderEditor, currentSelectedMesh) {
@@ -28,7 +29,8 @@ function updateCylinderEditor(cylinderEditor, currentSelectedMesh) {
   const boundingBox = boundingInfo.boundingBox;
 
   // Calculate the full diameter
-  const cylinderDiameter = 2 * boundingBox.extendSizeWorld.x;
+  const cylinderDiameter =
+    2 * Math.max(boundingBox.extendSizeWorld.x, boundingBox.extendSizeWorld.z);
   // Calculate the full height
   const cylinderHeight = 2 * boundingBox.extendSizeWorld.y;
 
@@ -140,6 +142,8 @@ export const CylinderEditor = () => {
     /* @ts-ignore */
     arrowTipBot.isEditorMesh = true;
 
+    setVisibility(group, false);
+
     setStore({
       cylinderEditor: {
         group,
@@ -174,7 +178,10 @@ export const CylinderEditor = () => {
     const isCylinder = currentSelected.type === "cylinder"; // Example condition
     const currentSelectedMesh = currentSelected.mesh;
     if (isCylinder) {
+      setVisibility(cylinderEditor.group, true);
       updateCylinderEditor(cylinderEditor, currentSelectedMesh);
+    } else {
+      setVisibility(cylinderEditor.group, false);
     }
 
     //check if currentSelectedMesh (babylon Mesh) has been created from CreateCylinder
@@ -247,6 +254,8 @@ export const CylinderEditor = () => {
       // Optionally, update the cylinder's diameter as well
       currentSelectedMesh.scaling.x = newScale;
       currentSelectedMesh.scaling.z = newScale;
+      currentSelectedMesh.onPropertyChanged("scaling", "x", newScale);
+      currentSelectedMesh.onPropertyChanged("scaling", "z", newScale);
 
       updateCylinderEditor(cylinderEditor, currentSelectedMesh);
     });
@@ -333,6 +342,8 @@ export const CylinderEditor = () => {
 
       // Optionally, update the cylinder's diameter as well
       currentSelectedMesh.scaling.y = newScale;
+
+      currentSelectedMesh.onPropertyChanged("scaling", "y", newScale);
 
       updateCylinderEditor(cylinderEditor, currentSelectedMesh);
     });
