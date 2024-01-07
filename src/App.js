@@ -6,6 +6,7 @@ import { CylinderEditor } from "./CylinderEditor";
 import { CubeEditor } from "./CubeEditor";
 import { MeshProperties } from "./MeshProperties";
 import { AllMeshes } from "./AllMeshes";
+import { IcoSphereEditor } from "./IcoSphereEditor";
 
 function App() {
   return (
@@ -16,6 +17,7 @@ function App() {
       </div>
       <Canvas>
         <MeshSelector />
+        <IcoSphereEditor />
         <CylinderEditor />
         <CubeEditor />
         <AllMeshes />

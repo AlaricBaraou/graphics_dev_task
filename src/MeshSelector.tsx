@@ -14,7 +14,9 @@ export const MeshSelector = () => {
     if (!scene || !canvas) return;
 
     // Create a HighlightLayer for the outline effect on picked mesh
-    const highlightLayer = new HighlightLayer("hl1", scene);
+    const highlightLayer = new HighlightLayer("hl1", scene, {
+      renderingGroupId: 0,
+    });
     setStore({
       highlightLayer,
     });

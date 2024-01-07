@@ -30,7 +30,7 @@ function prepareScene(canvas, scene) {
 
 export const Canvas = ({
   antialias,
-  engineOptions,
+  engineOptions = { stencil: true },
   adaptToDeviceRatio,
   sceneOptions,
   onRender,

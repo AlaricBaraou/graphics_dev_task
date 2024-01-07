@@ -2,8 +2,44 @@ import { useEffect } from "react";
 import { getStore, useStore } from "./stores/store";
 import * as dat from "dat.gui";
 
+const editorConfig = {
+  cube: {
+    label: "Cube parameters",
+    fields: [
+      { valueProp: "width", label: "width", min: 0.1, max: 2 },
+      { valueProp: "height", label: "height", min: 0.1, max: 2 },
+      { valueProp: "depth", label: "depth", min: 0.1, max: 2 },
+    ],
+  },
+  cylinder: {
+    label: "Cylinder parameters",
+    fields: [
+      { valueProp: "diameter", label: "diameter", min: 0.1, max: 2 },
+      { valueProp: "height", label: "height", min: 0.1, max: 2 },
+    ],
+  },
+  icosphere: {
+    label: "IcoSphere parameters",
+    fields: [
+      {
+        valueProp: "radius",
+        label: "diameter",
+        min: 0.1,
+        max: 2,
+        convertValue: (value) => value / 2,
+      },
+      {
+        valueProp: "subdivisions",
+        label: "subdivisions",
+        min: 1,
+        max: 10,
+        step: 1,
+      },
+    ],
+  },
+};
+
 export const MeshProperties = () => {
-  const allMeshes = useStore((s) => s.allMeshes);
   const currentSelected = useStore((s) => s.currentSelected);
 
   useEffect(() => {
@@ -37,10 +73,56 @@ export const MeshProperties = () => {
         },
       };
 
+      if (editorConfig[mesh.type]) {
+        const fieldParams = editorConfig[mesh.type];
+        const folderOfParams = gui.addFolder(fieldParams.label);
+        folderOfParams.open();
+        guiControllers.folder = folderOfParams;
+
+        for (let i = 0; i < fieldParams.fields.length; i++) {
+          const field = fieldParams.fields[i];
+          const guiField = folderOfParams.add(
+            currentSelected.parameters,
+            field.valueProp,
+            field.min,
+            field.max,
+            field.step
+          );
+
+          guiField.name(field.label);
+
+          guiField.onChange((v) => {
+            let newVal = v;
+            if (field.convertValue) {
+              newVal = field.convertValue(v);
+            }
+            console.log("newVal", newVal);
+            const { updateMesh } = getStore();
+            updateMesh(currentSelected.id, {
+              parameters: Object.assign({}, currentSelected.parameters, {
+                [field.valueProp]: newVal,
+              }),
+            });
+          });
+
+          guiControllers[field.valueProp] = guiField;
+        }
+      }
+
       mesh.onPropertyChanged = (property, subProperty, newValue) => {
-        if (guiControllers[property] && guiControllers[property][subProperty]) {
-          guiControllers[property].folder.open();
-          guiControllers[property][subProperty].setValue(newValue);
+        if (subProperty) {
+          if (
+            guiControllers[property] &&
+            guiControllers[property][subProperty]
+          ) {
+            guiControllers[property].folder.open();
+            guiControllers[property][subProperty].setValue(newValue);
+          }
+        } else {
+          if (guiControllers[property]) {
+            guiControllers.folder.open();
+            guiControllers[property].setValue(newValue);
+          }
         }
       };
     }

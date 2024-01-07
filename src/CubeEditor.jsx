@@ -51,7 +51,7 @@ const axisCtrlArrowShift = {
   y: "heightCtrlArrowShaft",
   z: "depthCtrlArrowShaft",
 };
-const useScaleAxis = (scene, cubeEditor, currentSelected, min, max, axis) => {
+const useUpdateAxis = (scene, cubeEditor, currentSelected, min, max, axis) => {
   /* adjust height */
   useEffect(() => {
     if (!scene || !cubeEditor || !currentSelected) return;
@@ -96,8 +96,9 @@ const useScaleAxis = (scene, cubeEditor, currentSelected, min, max, axis) => {
         max
       ); // Prevent negative scaling
 
-      // Optionally, update the cube's diameter as well
       currentSelectedMesh.scaling[axis] = newScale;
+
+      currentSelectedMesh.onPropertyChanged("scaling", axis, newScale);
 
       updateCubeEditor(cubeEditor, currentSelectedMesh);
     });
@@ -295,7 +296,7 @@ export const CubeEditor = () => {
     //if so, move the above ring and arrow on the position of that mesh
   }, [currentSelected, cubeEditor]);
 
-  useScaleAxis(
+  useUpdateAxis(
     scene,
     cubeEditor,
     currentSelected,
@@ -303,7 +304,7 @@ export const CubeEditor = () => {
     maxCubeWidth,
     "x"
   );
-  useScaleAxis(
+  useUpdateAxis(
     scene,
     cubeEditor,
     currentSelected,
@@ -311,7 +312,7 @@ export const CubeEditor = () => {
     maxCubeHeight,
     "y"
   );
-  useScaleAxis(
+  useUpdateAxis(
     scene,
     cubeEditor,
     currentSelected,

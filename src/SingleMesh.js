@@ -17,7 +17,7 @@ export const SingleMesh = ({ meshId }) => {
   useEffect(() => {
     const mesh = MeshBuilder[typeToMethod[meshParams.type]](
       meshParams.id,
-      {},
+      meshParams.parameters,
       scene
     );
     mesh.name = meshParams.name;
@@ -43,7 +43,7 @@ export const SingleMesh = ({ meshId }) => {
     return () => {
       mesh.dispose();
     };
-  }, []);
+  }, [meshParams.parameters]);
 
   useEffect(() => {
     console.log(meshParams.name, isSelected);
@@ -53,7 +53,6 @@ export const SingleMesh = ({ meshId }) => {
     highlightLayer.addMesh(meshParams.mesh, Color3.White());
 
     return () => {
-      console.log("remove mesh");
       highlightLayer.removeMesh(meshParams.mesh);
     };
   }, [isSelected]);

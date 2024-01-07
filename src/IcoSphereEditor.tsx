@@ -12,7 +12,7 @@ import { createArrow } from "./createArrow";
 import { setVisibility } from "./setVisibility";
 
 /* @ts-ignore */
-function updateCylinderEditor(cylinderEditor, currentSelectedMesh) {
+function updateIcoSphereEditor(icosphereEditor, currentSelectedMesh) {
   const {
     ring,
     ctrlRing,
@@ -21,23 +21,23 @@ function updateCylinderEditor(cylinderEditor, currentSelectedMesh) {
     arrowTipTop,
     arrowTipBot,
     group,
-  } = cylinderEditor;
+  } = icosphereEditor;
 
-  // Get the bounding box of the cylinder
+  // Get the bounding box of the icosphere
   currentSelectedMesh.computeWorldMatrix(true);
   const boundingInfo = currentSelectedMesh.getBoundingInfo();
   const boundingBox = boundingInfo.boundingBox;
 
   // Calculate the full diameter
-  const cylinderDiameter =
+  const icosphereDiameter =
     2 * Math.max(boundingBox.extendSizeWorld.x, boundingBox.extendSizeWorld.z);
   // Calculate the full height
-  const cylinderHeight = 2 * boundingBox.extendSizeWorld.y;
+  const icosphereHeight = 2 * boundingBox.extendSizeWorld.y;
 
   // Calculate scaling factors (10% bigger)
-  const ringScaleFactor = 1.1 * cylinderDiameter;
+  const ringScaleFactor = 1.1 * icosphereDiameter;
   const arrowScaleFactor =
-    (1.1 * cylinderHeight) / (arrowShaft.scaling.y + arrowTipTop.scaling.y);
+    (1.1 * icosphereHeight) / (arrowShaft.scaling.y + arrowTipTop.scaling.y);
 
   // Scale the ring and arrow
   ring.scaling.set(ringScaleFactor, ringScaleFactor, ringScaleFactor);
@@ -53,29 +53,29 @@ function updateCylinderEditor(cylinderEditor, currentSelectedMesh) {
   arrowTipTop.position.y = (arrowShaft.scaling.y + arrowTipTop.scaling.y) / 2;
   arrowTipBot.position.y = (-arrowShaft.scaling.y - arrowTipBot.scaling.y) / 2;
 
-  // Move the ring and arrow to the position of the cylinder
+  // Move the ring and arrow to the position of the icosphere
   group.position.copyFrom(currentSelectedMesh.position);
 }
 
-export const CylinderEditor = () => {
+export const IcoSphereEditor = () => {
   const [
     scene,
     canvas,
     currentSelected,
-    cylinderEditor,
-    minCylinderDiameter,
-    maxCylinderDiameter,
-    minCylinderHeight,
-    maxCylinderHeight,
+    icosphereEditor,
+    minIcoSphereDiameter,
+    maxIcoSphereDiameter,
+    minIcoSphereSubdivision,
+    maxIcoSphereSubdivision,
   ] = useStore((s: any) => [
     s.scene,
     s.canvas,
     s.currentSelected,
-    s.cylinderEditor,
-    s.minCylinderDiameter,
-    s.maxCylinderDiameter,
-    s.minCylinderHeight,
-    s.maxCylinderHeight,
+    s.icosphereEditor,
+    s.minIcoSphereDiameter,
+    s.maxIcoSphereDiameter,
+    s.minIcoSphereSubdivision,
+    s.maxIcoSphereSubdivision,
   ]);
 
   useEffect(() => {
@@ -145,7 +145,7 @@ export const CylinderEditor = () => {
     setVisibility(group, false);
 
     setStore({
-      cylinderEditor: {
+      icosphereEditor: {
         group,
         ring,
         ctrlRing,
@@ -166,35 +166,33 @@ export const CylinderEditor = () => {
       arrowTipBot.dispose();
       ringMaterial.dispose();
       arrowMaterial.dispose();
-      group.dispose();
-      ctrlRingMaterial.dispose();
       setStore({
-        cylinderEditor: null,
+        icosphereEditor: null,
       });
     };
   }, [scene, canvas]);
 
   useEffect(() => {
-    if (!currentSelected || !cylinderEditor) return;
+    if (!currentSelected || !icosphereEditor) return;
 
-    const isCylinder = currentSelected.type === "cylinder"; // Example condition
+    const isIcoSphere = currentSelected.type === "icosphere"; // Example condition
     const currentSelectedMesh = currentSelected.mesh;
-    if (isCylinder) {
-      setVisibility(cylinderEditor.group, true);
-      updateCylinderEditor(cylinderEditor, currentSelectedMesh);
+    if (isIcoSphere) {
+      setVisibility(icosphereEditor.group, true);
+      updateIcoSphereEditor(icosphereEditor, currentSelectedMesh);
     } else {
-      setVisibility(cylinderEditor.group, false);
+      setVisibility(icosphereEditor.group, false);
     }
 
-    //check if currentSelectedMesh (babylon Mesh) has been created from CreateCylinder
+    //check if currentSelectedMesh (babylon Mesh) has been created from CreateIcoSphere
     //if so, move the above ring and arrow on the position of that mesh
-  }, [currentSelected, cylinderEditor]);
+  }, [currentSelected, icosphereEditor]);
 
   /* adjust diameter */
   useEffect(() => {
-    if (!scene || !cylinderEditor || !currentSelected) return;
+    if (!scene || !icosphereEditor || !currentSelected) return;
     const currentSelectedMesh = currentSelected.mesh;
-    const { ctrlRing } = cylinderEditor;
+    const { ctrlRing } = icosphereEditor;
 
     // Initialize the drag behavior
     const pointerDragBehavior = new PointerDragBehavior({
@@ -248,18 +246,19 @@ export const CylinderEditor = () => {
       }
 
       // Calculate the new scale based on drag distance
-      const newScale = Math.min(
-        Math.max(initialScale + dragDistance, minCylinderDiameter),
-        maxCylinderDiameter
+      const newDiameter = Math.min(
+        Math.max(initialScale + dragDistance, minIcoSphereDiameter),
+        maxIcoSphereDiameter
       ); // Prevent negative scaling
 
-      currentSelectedMesh.onPropertyChanged("diameter", null, newScale);
+      console.log("newDiameter", newDiameter);
+      currentSelectedMesh.onPropertyChanged("radius", null, newDiameter);
 
-      updateCylinderEditor(cylinderEditor, currentSelectedMesh);
+      updateIcoSphereEditor(icosphereEditor, currentSelectedMesh);
     });
 
     pointerDragBehavior.onDragEndObservable.add((event) => {
-      const { ctrlRing } = cylinderEditor;
+      const { ctrlRing } = icosphereEditor;
       ctrlRing.position.set(0, 0, 0);
     });
 
@@ -269,17 +268,17 @@ export const CylinderEditor = () => {
     };
   }, [
     scene,
-    cylinderEditor,
+    icosphereEditor,
     currentSelected,
-    minCylinderDiameter,
-    maxCylinderDiameter,
+    minIcoSphereDiameter,
+    maxIcoSphereDiameter,
   ]);
 
   /* adjust height */
   useEffect(() => {
-    if (!scene || !cylinderEditor || !currentSelected) return;
+    if (!scene || !icosphereEditor || !currentSelected) return;
     const currentSelectedMesh = currentSelected.mesh;
-    const { ctrlArrowShaft } = cylinderEditor;
+    const { ctrlArrowShaft } = icosphereEditor;
 
     // Initialize the drag behavior
     const pointerDragBehavior = new PointerDragBehavior({
@@ -332,26 +331,34 @@ export const CylinderEditor = () => {
         }
       }
 
+      console.log("dragDistance", dragDistance);
       // Calculate the new scale based on drag distance
-      const newScale = Math.min(
-        Math.max(initialScale + dragDistance, minCylinderHeight),
-        maxCylinderHeight
+      const newSubdivision = Math.min(
+        Math.max(
+          Math.round(initialScale + dragDistance * 10),
+          minIcoSphereSubdivision
+        ),
+        maxIcoSphereSubdivision
       ); // Prevent negative scaling
 
-      // Optionally, update the cylinder's diameter as well
-      currentSelectedMesh.scaling.y = newScale;
+      // Optionally, update the icosphere's diameter as well
+      currentSelectedMesh.scaling.y = newSubdivision;
 
-      currentSelectedMesh.onPropertyChanged("height", null, newScale);
+      currentSelectedMesh.onPropertyChanged(
+        "subdivisions",
+        null,
+        newSubdivision
+      );
 
-      updateCylinderEditor(cylinderEditor, currentSelectedMesh);
+      updateIcoSphereEditor(icosphereEditor, currentSelectedMesh);
     });
 
     pointerDragBehavior.onDragEndObservable.add((event) => {
-      const { ctrlArrowShaft } = cylinderEditor;
+      const { ctrlArrowShaft } = icosphereEditor;
       ctrlArrowShaft.position.set(0, 0, 0);
     });
 
-    //implement custom pointer logic to trigger startDrag since it's located inside the cylinder
+    //implement custom pointer logic to trigger startDrag since it's located inside the icosphere
     const onPointerDown = (evt: any) => {
       const pickRay = scene.createPickingRay(
         scene.pointerX,
@@ -391,10 +398,10 @@ export const CylinderEditor = () => {
     };
   }, [
     scene,
-    cylinderEditor,
+    icosphereEditor,
     currentSelected,
-    minCylinderHeight,
-    maxCylinderHeight,
+    minIcoSphereSubdivision,
+    maxIcoSphereSubdivision,
   ]);
 
   return null;
