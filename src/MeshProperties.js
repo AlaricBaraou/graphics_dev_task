@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { getStore, useStore } from "./stores/store";
 import * as dat from "dat.gui";
+import { applyBouncing } from "./applyBouncing";
 
 const editorConfig = {
   cube: {
@@ -108,6 +109,40 @@ export const MeshProperties = () => {
           guiControllers[field.valueProp] = guiField;
         }
       }
+
+      // Add animation button to the GUI
+
+      // Define variables for the new fields
+      let amplitude = 5; // Default amplitude value
+      let duration = 2; // Default duration value
+      let useDuration = true; // Default value for the boolean flag
+
+      const folderAnimation = gui.addFolder("animation");
+      folderAnimation.open();
+      const buttonFunction = () => {
+        applyBouncing(mesh, amplitude, duration, 0.9, -9.81, useDuration);
+      };
+      folderAnimation
+        .add({ buttonFunction }, "buttonFunction")
+        .name("Run Animation");
+
+      // Add amplitude slider to the GUI
+      folderAnimation
+        .add({ amplitude: amplitude }, "amplitude", 0.2, 5)
+        .onChange((value) => (amplitude = value))
+        .name("Amplitude");
+
+      // Add duration slider to the GUI
+      folderAnimation
+        .add({ duration: duration }, "duration", 1, 10)
+        .onChange((value) => (duration = value))
+        .name("Duration");
+
+      // Add 'use duration' checkbox to the GUI
+      folderAnimation
+        .add({ useDuration: useDuration }, "useDuration")
+        .onChange((value) => (useDuration = value))
+        .name("Use Duration");
 
       mesh.onPropertyChanged = (property, subProperty, newValue) => {
         if (subProperty) {
