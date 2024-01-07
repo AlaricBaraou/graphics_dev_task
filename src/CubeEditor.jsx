@@ -6,10 +6,12 @@ import {
   Mesh,
   Vector3,
   PointerDragBehavior,
+  Matrix,
 } from "babylonjs";
 import { setStore, useStore } from "./stores/store";
 import { createArrow } from "./createArrow";
 import { setVisibility } from "./setVisibility";
+import { IndexType } from "typescript";
 
 /* @ts-ignore */
 function updateCubeEditor(cubeEditor, currentSelectedMesh) {
@@ -43,6 +45,111 @@ function updateCubeEditor(cubeEditor, currentSelectedMesh) {
   group.position.copyFrom(currentSelectedMesh.position);
 }
 
+const localAxisDrag = new Vector3(0, 1, 0);
+const axisCtrlArrowShift = {
+  x: "widthCtrlArrowShaft",
+  y: "heightCtrlArrowShaft",
+  z: "depthCtrlArrowShaft",
+};
+const useScaleAxis = (scene, cubeEditor, currentSelected, min, max, axis) => {
+  /* adjust height */
+  useEffect(() => {
+    if (!scene || !cubeEditor || !currentSelected) return;
+    const currentSelectedMesh = currentSelected.mesh;
+    const ctrlArrowShaft = cubeEditor[axisCtrlArrowShift[axis]];
+
+    // Initialize the drag behavior
+    const pointerDragBehavior = new PointerDragBehavior({
+      dragAxis: localAxisDrag,
+    });
+
+    // Attach drag behavior to the ring
+    ctrlArrowShaft.addBehavior(pointerDragBehavior);
+
+    // Variables to store initial positions and scaling
+    let initialPointer = 0;
+    let initialScale = 0;
+
+    // On drag start
+    pointerDragBehavior.onDragStartObservable.add((event) => {
+      initialPointer = event.dragPlanePoint[axis];
+      initialScale = ctrlArrowShaft.scaling[axis]; // Store the initial scale of the ring
+    });
+
+    // On drag
+    pointerDragBehavior.onDragObservable.add((event) => {
+      const currentPointer = event.dragPlanePoint[axis];
+      let dragDistance = Math.abs(currentPointer - initialPointer);
+
+      // Check if dragging is toward or away from the center
+
+      const isDraggingTowardCenter = currentPointer - currentPointer > 0;
+      if (isDraggingTowardCenter) {
+        dragDistance *= -1;
+      } else {
+        dragDistance *= 1;
+      }
+
+      // Calculate the new scale based on drag distance
+      const newScale = Math.min(
+        Math.max(initialScale + dragDistance, min),
+        max
+      ); // Prevent negative scaling
+
+      // Optionally, update the cube's diameter as well
+      currentSelectedMesh.scaling[axis] = newScale;
+
+      updateCubeEditor(cubeEditor, currentSelectedMesh);
+    });
+
+    pointerDragBehavior.onDragEndObservable.add((event) => {
+      const ctrlArrowShaft = cubeEditor[axisCtrlArrowShift[axis]];
+      ctrlArrowShaft.position.set(0, 0.25, 0);
+    });
+
+    //implement custom pointer logic to trigger startDrag since it's located inside the cube
+    const onPointerDown = (evt) => {
+      const pickRay = scene.createPickingRay(
+        scene.pointerX,
+        scene.pointerY,
+        Matrix.Identity(),
+        scene.activeCamera
+      );
+      const allHits = scene.multiPickWithRay(pickRay);
+
+      let ctrlArrowShaftIsHit = false;
+      if (allHits) {
+        for (let i = 0; i < allHits.length; i++) {
+          if (allHits[i].pickedMesh === ctrlArrowShaft) {
+            ctrlArrowShaftIsHit = true;
+            break;
+          }
+        }
+      }
+
+      if (ctrlArrowShaftIsHit) {
+        // ctrlArrowShaft is one of the meshes hit by the ray
+        const pointerId = evt.pointerId;
+        const startPickedPoint = allHits.find(
+          (hit) => hit.pickedMesh === ctrlArrowShaft
+        )?.pickedPoint;
+        pointerDragBehavior.startDrag(pointerId, pickRay, startPickedPoint);
+      }
+    };
+
+    document.addEventListener("pointerdown", onPointerDown);
+
+    // Cleanup
+    return () => {
+      ctrlArrowShaft.removeBehavior(pointerDragBehavior);
+      scene.onPointerDown = null;
+      document.removeEventListener("pointerdown", onPointerDown);
+    };
+  }, [scene, cubeEditor, currentSelected, min, max]);
+
+  return null;
+};
+
 export const CubeEditor = () => {
   const [
     scene,
@@ -55,7 +162,7 @@ export const CubeEditor = () => {
     maxCubeHeight,
     minCubeDepth,
     maxCubeDepth,
-  ] = useStore((s: any) => [
+  ] = useStore((s) => [
     s.scene,
     s.canvas,
     s.currentSelected,
@@ -188,119 +295,30 @@ export const CubeEditor = () => {
     //if so, move the above ring and arrow on the position of that mesh
   }, [currentSelected, cubeEditor]);
 
-  /* adjust height */
-  useEffect(() => {
-    if (!scene || !cubeEditor || !currentSelected) return;
-    const currentSelectedMesh = currentSelected.mesh;
-    const { heightCtrlArrowShaft } = cubeEditor;
-
-    // Initialize the drag behavior
-    const pointerDragBehavior = new PointerDragBehavior({
-      dragAxis: new Vector3(0, 1, 0),
-    });
-
-    // Attach drag behavior to the ring
-    heightCtrlArrowShaft.addBehavior(pointerDragBehavior);
-
-    // Variables to store initial positions and scaling
-    let initialPointerY = 0;
-    let initialScale = 0;
-    let ringCenterY = 0;
-
-    // On drag start
-    pointerDragBehavior.onDragStartObservable.add((event) => {
-      initialPointerY = event.dragPlanePoint.y;
-      initialScale = heightCtrlArrowShaft.scaling.y; // Store the initial scale of the ring
-
-      // Get the absolute world position of the heightCtrlArrowShaft mesh
-      const ringWorldPosition = heightCtrlArrowShaft.getAbsolutePosition();
-      // Use the X-coordinate of the world position
-      ringCenterY = ringWorldPosition.y;
-    });
-
-    // On drag
-    pointerDragBehavior.onDragObservable.add((event) => {
-      const currentPointerY = event.dragPlanePoint.y;
-      let dragDistance = Math.abs(currentPointerY - initialPointerY);
-
-      // Check if dragging is toward or away from the center
-
-      if (currentPointerY > ringCenterY) {
-        const isDraggingTowardCenter =
-          Math.abs(currentPointerY - ringCenterY) <
-          Math.abs(initialPointerY - ringCenterY);
-        if (isDraggingTowardCenter) {
-          dragDistance *= -1;
-        } else {
-          dragDistance *= 1;
-        }
-      } else {
-        const isDraggingTowardCenter =
-          Math.abs(currentPointerY - ringCenterY) <
-          Math.abs(initialPointerY - ringCenterY);
-        if (isDraggingTowardCenter) {
-          dragDistance *= -1;
-        } else {
-          dragDistance *= 1;
-        }
-      }
-
-      // Calculate the new scale based on drag distance
-      const newScale = Math.min(
-        Math.max(initialScale + dragDistance, minCubeHeight),
-        maxCubeHeight
-      ); // Prevent negative scaling
-
-      // Optionally, update the cube's diameter as well
-      currentSelectedMesh.scaling.y = newScale;
-
-      updateCubeEditor(cubeEditor, currentSelectedMesh);
-    });
-
-    pointerDragBehavior.onDragEndObservable.add((event) => {
-      const { heightCtrlArrowShaft } = cubeEditor;
-      heightCtrlArrowShaft.position.set(0, 0.25, 0);
-    });
-
-    //implement custom pointer logic to trigger startDrag since it's located inside the cube
-    const onPointerDown = (evt: any) => {
-      const pickRay = scene.createPickingRay(
-        scene.pointerX,
-        scene.pointerY,
-        BABYLON.Matrix.Identity(),
-        scene.activeCamera
-      );
-      const allHits = scene.multiPickWithRay(pickRay);
-
-      let heightCtrlArrowShaftIsHit = false;
-      if (allHits) {
-        for (let i = 0; i < allHits.length; i++) {
-          if (allHits[i].pickedMesh === heightCtrlArrowShaft) {
-            heightCtrlArrowShaftIsHit = true;
-            break;
-          }
-        }
-      }
-
-      if (heightCtrlArrowShaftIsHit) {
-        // heightCtrlArrowShaft is one of the meshes hit by the ray
-        const pointerId = evt.pointerId;
-        const startPickedPoint = allHits.find(
-          (hit: any) => hit.pickedMesh === heightCtrlArrowShaft
-        )?.pickedPoint;
-        pointerDragBehavior.startDrag(pointerId, pickRay, startPickedPoint);
-      }
-    };
-
-    document.addEventListener("pointerdown", onPointerDown);
-
-    // Cleanup
-    return () => {
-      heightCtrlArrowShaft.removeBehavior(pointerDragBehavior);
-      scene.onPointerDown = null;
-      document.removeEventListener("pointerdown", onPointerDown);
-    };
-  }, [scene, cubeEditor, currentSelected, minCubeHeight, maxCubeHeight]);
+  useScaleAxis(
+    scene,
+    cubeEditor,
+    currentSelected,
+    minCubeWidth,
+    maxCubeWidth,
+    "x"
+  );
+  useScaleAxis(
+    scene,
+    cubeEditor,
+    currentSelected,
+    minCubeHeight,
+    maxCubeHeight,
+    "y"
+  );
+  useScaleAxis(
+    scene,
+    cubeEditor,
+    currentSelected,
+    minCubeDepth,
+    maxCubeDepth,
+    "z"
+  );
 
   return null;
 };
