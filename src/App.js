@@ -7,6 +7,7 @@ import { CubeEditor } from "./CubeEditor";
 import { MeshProperties } from "./MeshProperties";
 import { AllMeshes } from "./AllMeshes";
 import { IcoSphereEditor } from "./IcoSphereEditor";
+import { CursorManager } from "./CursorManager";
 
 function App() {
   return (
@@ -16,6 +17,7 @@ function App() {
         <MeshProperties />
       </div>
       <Canvas>
+        <CursorManager />
         <MeshSelector />
         <IcoSphereEditor />
         <CylinderEditor />

@@ -98,7 +98,6 @@ export const MeshProperties = () => {
             if (field.convertValue) {
               newVal = field.convertValue(v);
             }
-            console.log("newVal", newVal);
             const { updateMesh } = getStore();
             updateMesh(currentSelected.id, {
               parameters: Object.assign({}, currentSelected.parameters, {

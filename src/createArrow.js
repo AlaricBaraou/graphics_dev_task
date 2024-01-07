@@ -1,14 +1,21 @@
-import { MeshBuilder, Mesh } from "babylonjs";
+import { MeshBuilder, Mesh, StandardMaterial } from "babylonjs";
 
 export function createArrow(scene, arrowMaterial, rotation, height, position) {
   // Create a parent group
   const group = new Mesh("group", scene);
+
+  const transparentMaterial = new StandardMaterial(
+    "transparentMaterial",
+    scene
+  );
+  transparentMaterial.alpha = 0;
 
   const ctrlArrowShaft = MeshBuilder.CreateCylinder(
     "ctrlShaft",
     { diameter: 0.05, height: height },
     scene
   );
+  ctrlArrowShaft.material = transparentMaterial;
   const arrowShaft = MeshBuilder.CreateCylinder(
     "shaft",
     { diameter: 0.05, height: height },
@@ -35,6 +42,11 @@ export function createArrow(scene, arrowMaterial, rotation, height, position) {
   arrowShaft.isEditorMesh = true;
   ctrlArrowShaft.isEditorMesh = true;
   arrowTipTop.isEditorMesh = true;
+
+  /* for onPointerMove event */
+  arrowShaft.enablePointerMoveEvents = true;
+  ctrlArrowShaft.enablePointerMoveEvents = true;
+  arrowTipTop.enablePointerMoveEvents = true;
 
   arrowShaft.parent = group;
   ctrlArrowShaft.parent = group;

@@ -8,7 +8,7 @@ import {
   PointerDragBehavior,
   Matrix,
 } from "babylonjs";
-import { setStore, useStore } from "./stores/store";
+import { getStore, setStore, useStore } from "./stores/store";
 import { createArrow } from "./createArrow";
 import { setVisibility } from "./setVisibility";
 import { IndexType } from "typescript";
@@ -32,11 +32,9 @@ function updateCubeEditor(cubeEditor, currentSelectedMesh) {
 
   // Calculate the full height
   const cubeHeight = 2 * boundingBox.extendSizeWorld.y;
-  console.log("cubeHeight", cubeHeight);
 
-  // Calculate scaling factors (10% bigger)
-  const arrowScaleFactor = (1.1 * cubeHeight) / heightArrowGroup.scaling.y;
-  console.log("arrowScaleFactor", arrowScaleFactor);
+  // Calculate scaling factors
+  const arrowScaleFactor = cubeHeight / heightArrowGroup.scaling.y;
 
   // Scale the arrows
   heightArrowGroup.scaling.y *= arrowScaleFactor;
@@ -50,6 +48,11 @@ const axisCtrlArrowShift = {
   x: "widthCtrlArrowShaft",
   y: "heightCtrlArrowShaft",
   z: "depthCtrlArrowShaft",
+};
+const axisToParam = {
+  x: "width",
+  y: "height",
+  z: "depth",
 };
 const useUpdateAxis = (
   scene,
@@ -77,11 +80,16 @@ const useUpdateAxis = (
     // Variables to store initial positions and scaling
     let initialPointer = 0;
     let initialScale = 0;
+    let arrowCenter = 0;
 
     // On drag start
     pointerDragBehavior.onDragStartObservable.add((event) => {
       initialPointer = event.dragPlanePoint[axis];
-      initialScale = ctrlArrowShaft.scaling[axis]; // Store the initial scale of the ring
+      initialScale = ctrlArrowShaft.parent.scaling.y;
+
+      const arrowWorldPosition = ctrlArrowShaft.parent.getAbsolutePosition();
+
+      arrowCenter = arrowWorldPosition[axis];
     });
 
     // On drag
@@ -91,7 +99,9 @@ const useUpdateAxis = (
 
       // Check if dragging is toward or away from the center
 
-      const isDraggingTowardCenter = currentPointer - currentPointer > 0;
+      const isDraggingTowardCenter =
+        (initialPointer > arrowCenter && currentPointer < initialPointer) ||
+        (initialPointer < arrowCenter && currentPointer > initialPointer);
       if (isDraggingTowardCenter) {
         dragDistance *= -1;
       } else {
@@ -106,9 +116,10 @@ const useUpdateAxis = (
 
       currentSelectedMesh.scaling[axis] = newScale;
 
-      currentSelectedMesh.onPropertyChanged("scaling", axis, newScale);
+      currentSelectedMesh.onPropertyChanged(axisToParam[axis], null, newScale);
 
-      updateCubeEditor(cubeEditor, currentSelectedMesh);
+      const { allMeshes } = getStore();
+      updateCubeEditor(cubeEditor, allMeshes[currentSelectedId].mesh);
     });
 
     pointerDragBehavior.onDragEndObservable.add((event) => {

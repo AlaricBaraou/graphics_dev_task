@@ -48,7 +48,6 @@ export const SingleMesh = ({ meshId }) => {
   }, [meshParams.parameters]);
 
   useEffect(() => {
-    console.log(meshParams.name, isSelected);
     if (!isSelected) return;
     const { highlightLayer } = getStore();
 

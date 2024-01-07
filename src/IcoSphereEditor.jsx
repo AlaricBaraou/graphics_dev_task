@@ -6,8 +6,9 @@ import {
   Mesh,
   Vector3,
   PointerDragBehavior,
+  Matrix,
 } from "babylonjs";
-import { setStore, useStore } from "./stores/store";
+import { getStore, setStore, useStore } from "./stores/store";
 import { createArrow } from "./createArrow";
 import { setVisibility } from "./setVisibility";
 
@@ -68,7 +69,7 @@ export const IcoSphereEditor = () => {
     maxIcoSphereDiameter,
     minIcoSphereSubdivision,
     maxIcoSphereSubdivision,
-  ] = useStore((s: any) => [
+  ] = useStore((s) => [
     s.scene,
     s.canvas,
     s.allMeshes[s.currentSelectedId],
@@ -131,18 +132,28 @@ export const IcoSphereEditor = () => {
     arrowTipTop.parent = group;
     arrowTipBot.parent = group;
 
-    /* @ts-ignore */
     ring.isEditorMesh = true;
-    /* @ts-ignore */
     ctrlRing.isEditorMesh = true;
-    /* @ts-ignore */
     arrowShaft.isEditorMesh = true;
-    /* @ts-ignore */
     ctrlArrowShaft.isEditorMesh = true;
-    /* @ts-ignore */
     arrowTipTop.isEditorMesh = true;
-    /* @ts-ignore */
     arrowTipBot.isEditorMesh = true;
+
+    /* for onPointerMove event */
+    ring.enablePointerMoveEvents = true;
+    ctrlRing.enablePointerMoveEvents = true;
+    arrowShaft.enablePointerMoveEvents = true;
+    ctrlArrowShaft.enablePointerMoveEvents = true;
+    arrowTipTop.enablePointerMoveEvents = true;
+    arrowTipBot.enablePointerMoveEvents = true;
+
+    const transparentMaterial = new StandardMaterial(
+      "transparentMaterial",
+      scene
+    );
+    transparentMaterial.alpha = 0;
+    ctrlArrowShaft.material = transparentMaterial;
+    ctrlRing.material = transparentMaterial;
 
     setVisibility(group, false);
 
@@ -226,25 +237,13 @@ export const IcoSphereEditor = () => {
       let dragDistance = Math.abs(currentPointerX - initialPointerX);
 
       // Check if dragging is toward or away from the center
-
-      if (currentPointerX > ringCenterX) {
-        const isDraggingTowardCenter =
-          Math.abs(currentPointerX - ringCenterX) <
-          Math.abs(initialPointerX - ringCenterX);
-        if (isDraggingTowardCenter) {
-          dragDistance *= -1;
-        } else {
-          dragDistance *= 1;
-        }
+      const isDraggingTowardCenter =
+        (initialPointerX > ringCenterX && currentPointerX < initialPointerX) ||
+        (initialPointerX < ringCenterX && currentPointerX > initialPointerX);
+      if (isDraggingTowardCenter) {
+        dragDistance *= -1;
       } else {
-        const isDraggingTowardCenter =
-          Math.abs(currentPointerX - ringCenterX) <
-          Math.abs(initialPointerX - ringCenterX);
-        if (isDraggingTowardCenter) {
-          dragDistance *= -1;
-        } else {
-          dragDistance *= 1;
-        }
+        dragDistance *= 1;
       }
 
       // Calculate the new scale based on drag distance
@@ -253,10 +252,10 @@ export const IcoSphereEditor = () => {
         maxIcoSphereDiameter
       ); // Prevent negative scaling
 
-      console.log("newDiameter", newDiameter);
       currentSelectedMesh.onPropertyChanged("radius", null, newDiameter);
 
-      updateIcoSphereEditor(icosphereEditor, currentSelectedMesh);
+      const { allMeshes } = getStore();
+      updateIcoSphereEditor(icosphereEditor, allMeshes[currentSelectedId].mesh);
     });
 
     pointerDragBehavior.onDragEndObservable.add((event) => {
@@ -293,17 +292,16 @@ export const IcoSphereEditor = () => {
     // Variables to store initial positions and scaling
     let initialPointerY = 0;
     let initialScale = 0;
-    let ringCenterY = 0;
+    let arrowCenterY = 0;
 
     // On drag start
     pointerDragBehavior.onDragStartObservable.add((event) => {
       initialPointerY = event.dragPlanePoint.y;
       initialScale = ctrlArrowShaft.scaling.y; // Store the initial scale of the ring
 
-      // Get the absolute world position of the ctrlArrowShaft mesh
       const ringWorldPosition = ctrlArrowShaft.getAbsolutePosition();
       // Use the X-coordinate of the world position
-      ringCenterY = ringWorldPosition.y;
+      arrowCenterY = ringWorldPosition.y;
     });
 
     // On drag
@@ -312,32 +310,19 @@ export const IcoSphereEditor = () => {
       let dragDistance = Math.abs(currentPointerY - initialPointerY);
 
       // Check if dragging is toward or away from the center
-
-      if (currentPointerY > ringCenterY) {
-        const isDraggingTowardCenter =
-          Math.abs(currentPointerY - ringCenterY) <
-          Math.abs(initialPointerY - ringCenterY);
-        if (isDraggingTowardCenter) {
-          dragDistance *= -1;
-        } else {
-          dragDistance *= 1;
-        }
+      const isDraggingTowardCenter =
+        (initialPointerY > arrowCenterY && currentPointerY < initialPointerY) ||
+        (initialPointerY < arrowCenterY && currentPointerY > initialPointerY);
+      if (isDraggingTowardCenter) {
+        dragDistance *= -1;
       } else {
-        const isDraggingTowardCenter =
-          Math.abs(currentPointerY - ringCenterY) <
-          Math.abs(initialPointerY - ringCenterY);
-        if (isDraggingTowardCenter) {
-          dragDistance *= -1;
-        } else {
-          dragDistance *= 1;
-        }
+        dragDistance *= 1;
       }
 
-      console.log("dragDistance", dragDistance);
       // Calculate the new scale based on drag distance
       const newSubdivision = Math.min(
         Math.max(
-          Math.round(initialScale + dragDistance * 10),
+          Math.round(initialScale + dragDistance * 5),
           minIcoSphereSubdivision
         ),
         maxIcoSphereSubdivision
@@ -352,7 +337,8 @@ export const IcoSphereEditor = () => {
         newSubdivision
       );
 
-      updateIcoSphereEditor(icosphereEditor, currentSelectedMesh);
+      const { allMeshes } = getStore();
+      updateIcoSphereEditor(icosphereEditor, allMeshes[currentSelectedId].mesh);
     });
 
     pointerDragBehavior.onDragEndObservable.add((event) => {
@@ -361,11 +347,11 @@ export const IcoSphereEditor = () => {
     });
 
     //implement custom pointer logic to trigger startDrag since it's located inside the icosphere
-    const onPointerDown = (evt: any) => {
+    const onPointerDown = (evt) => {
       const pickRay = scene.createPickingRay(
         scene.pointerX,
         scene.pointerY,
-        BABYLON.Matrix.Identity(),
+        Matrix.Identity(),
         scene.activeCamera
       );
       const allHits = scene.multiPickWithRay(pickRay);
@@ -384,7 +370,7 @@ export const IcoSphereEditor = () => {
         // ctrlArrowShaft is one of the meshes hit by the ray
         const pointerId = evt.pointerId;
         const startPickedPoint = allHits.find(
-          (hit: any) => hit.pickedMesh === ctrlArrowShaft
+          (hit) => hit.pickedMesh === ctrlArrowShaft
         )?.pickedPoint;
         pointerDragBehavior.startDrag(pointerId, pickRay, startPickedPoint);
       }
