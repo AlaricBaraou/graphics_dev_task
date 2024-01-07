@@ -41,7 +41,8 @@ const editorConfig = {
 };
 
 export const MeshProperties = () => {
-  const currentSelected = useStore((s) => s.currentSelected);
+  const currentSelectedId = useStore((s) => s.currentSelectedId);
+  const currentSelected = useStore((s) => s.allMeshes[s.currentSelectedId]);
 
   useEffect(() => {
     if (!currentSelected) return;
@@ -113,18 +114,14 @@ export const MeshProperties = () => {
       // Add animation button to the GUI
 
       // Define variables for the new fields
-      let amplitude = 5; // Default amplitude value
-      let duration = 2; // Default duration value
+      let amplitude = 5;
+      let duration = 2;
+      let cor = 0.9; // Default cor value equivalent of a ping pong ball
+      let gravity = -9.81;
       let useDuration = true; // Default value for the boolean flag
 
       const folderAnimation = gui.addFolder("animation");
       folderAnimation.open();
-      const buttonFunction = () => {
-        applyBouncing(mesh, amplitude, duration, 0.9, -9.81, useDuration);
-      };
-      folderAnimation
-        .add({ buttonFunction }, "buttonFunction")
-        .name("Run Animation");
 
       // Add amplitude slider to the GUI
       folderAnimation
@@ -138,11 +135,34 @@ export const MeshProperties = () => {
         .onChange((value) => (duration = value))
         .name("Duration");
 
+      // Add cor slider to the GUI
+      folderAnimation
+        .add({ cor: cor }, "cor", 0, 1)
+        .onChange((value) => (cor = value))
+        .name("Coefficient of restitution");
+
+      // Add gravity slider to the GUI
+      folderAnimation
+        .add({ gravity: gravity }, "gravity", -20, -1)
+        .onChange((value) => (gravity = value))
+        .name("Gravity");
+
       // Add 'use duration' checkbox to the GUI
       folderAnimation
         .add({ useDuration: useDuration }, "useDuration")
         .onChange((value) => (useDuration = value))
         .name("Use Duration");
+
+      const buttonFunction = () => {
+        const { allMeshes, currentSelectedId } = getStore();
+        const mesh =
+          allMeshes[currentSelectedId] && allMeshes[currentSelectedId].mesh;
+        if (mesh)
+          applyBouncing(mesh, amplitude, duration, cor, gravity, useDuration);
+      };
+      folderAnimation
+        .add({ buttonFunction }, "buttonFunction")
+        .name("Run Animation");
 
       mesh.onPropertyChanged = (property, subProperty, newValue) => {
         if (subProperty) {
@@ -165,7 +185,7 @@ export const MeshProperties = () => {
     return () => {
       gui.destroy(); // Clean up GUI when component unmounts
     };
-  }, [currentSelected]);
+  }, [currentSelectedId]);
 
   return <ul></ul>;
 };

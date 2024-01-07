@@ -51,7 +51,15 @@ const axisCtrlArrowShift = {
   y: "heightCtrlArrowShaft",
   z: "depthCtrlArrowShaft",
 };
-const useUpdateAxis = (scene, cubeEditor, currentSelected, min, max, axis) => {
+const useUpdateAxis = (
+  scene,
+  cubeEditor,
+  currentSelected,
+  currentSelectedId,
+  min,
+  max,
+  axis
+) => {
   /* adjust height */
   useEffect(() => {
     if (!scene || !cubeEditor || !currentSelected) return;
@@ -146,7 +154,7 @@ const useUpdateAxis = (scene, cubeEditor, currentSelected, min, max, axis) => {
       scene.onPointerDown = null;
       document.removeEventListener("pointerdown", onPointerDown);
     };
-  }, [scene, cubeEditor, currentSelected, min, max]);
+  }, [scene, cubeEditor, currentSelectedId, min, max]);
 
   return null;
 };
@@ -156,6 +164,7 @@ export const CubeEditor = () => {
     scene,
     canvas,
     currentSelected,
+    currentSelectedId,
     cubeEditor,
     minCubeWidth,
     maxCubeWidth,
@@ -166,7 +175,8 @@ export const CubeEditor = () => {
   ] = useStore((s) => [
     s.scene,
     s.canvas,
-    s.currentSelected,
+    s.allMeshes[s.currentSelectedId],
+    s.currentSelectedId,
     s.cubeEditor,
     s.minCubeWidth,
     s.maxCubeWidth,
@@ -294,12 +304,13 @@ export const CubeEditor = () => {
 
     //check if currentSelectedMesh (babylon Mesh) has been created from CreateCylinder
     //if so, move the above ring and arrow on the position of that mesh
-  }, [currentSelected, cubeEditor]);
+  }, [currentSelectedId, cubeEditor]);
 
   useUpdateAxis(
     scene,
     cubeEditor,
     currentSelected,
+    currentSelectedId,
     minCubeWidth,
     maxCubeWidth,
     "x"
@@ -308,6 +319,7 @@ export const CubeEditor = () => {
     scene,
     cubeEditor,
     currentSelected,
+    currentSelectedId,
     minCubeHeight,
     maxCubeHeight,
     "y"
@@ -316,6 +328,7 @@ export const CubeEditor = () => {
     scene,
     cubeEditor,
     currentSelected,
+    currentSelectedId,
     minCubeDepth,
     maxCubeDepth,
     "z"

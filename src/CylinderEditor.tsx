@@ -62,6 +62,7 @@ export const CylinderEditor = () => {
     scene,
     canvas,
     currentSelected,
+    currentSelectedId,
     cylinderEditor,
     minCylinderDiameter,
     maxCylinderDiameter,
@@ -70,7 +71,8 @@ export const CylinderEditor = () => {
   ] = useStore((s: any) => [
     s.scene,
     s.canvas,
-    s.currentSelected,
+    s.allMeshes[s.currentSelectedId],
+    s.currentSelectedId,
     s.cylinderEditor,
     s.minCylinderDiameter,
     s.maxCylinderDiameter,
@@ -188,7 +190,7 @@ export const CylinderEditor = () => {
 
     //check if currentSelectedMesh (babylon Mesh) has been created from CreateCylinder
     //if so, move the above ring and arrow on the position of that mesh
-  }, [currentSelected, cylinderEditor]);
+  }, [currentSelectedId, cylinderEditor]);
 
   /* adjust diameter */
   useEffect(() => {
@@ -270,7 +272,7 @@ export const CylinderEditor = () => {
   }, [
     scene,
     cylinderEditor,
-    currentSelected,
+    currentSelectedId,
     minCylinderDiameter,
     maxCylinderDiameter,
   ]);
@@ -392,7 +394,7 @@ export const CylinderEditor = () => {
   }, [
     scene,
     cylinderEditor,
-    currentSelected,
+    currentSelectedId,
     minCylinderHeight,
     maxCylinderHeight,
   ]);

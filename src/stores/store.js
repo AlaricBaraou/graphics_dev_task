@@ -39,7 +39,7 @@ const useStoreImpl = create((set, get) => {
       },
     },
     highlightLayer: null,
-    currentSelected: null,
+    currentSelectedId: null,
 
     minCylinderDiameter: 0.1,
     maxCylinderDiameter: 2,
@@ -89,7 +89,7 @@ const useStoreImpl = create((set, get) => {
 
         set({
           allMeshes,
-          currentSelected: allMeshes[id],
+          currentSelectedId: id,
         });
       } else {
         console.warn("mesh " + id + " not found");

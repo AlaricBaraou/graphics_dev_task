@@ -62,6 +62,7 @@ export const IcoSphereEditor = () => {
     scene,
     canvas,
     currentSelected,
+    currentSelectedId,
     icosphereEditor,
     minIcoSphereDiameter,
     maxIcoSphereDiameter,
@@ -70,7 +71,8 @@ export const IcoSphereEditor = () => {
   ] = useStore((s: any) => [
     s.scene,
     s.canvas,
-    s.currentSelected,
+    s.allMeshes[s.currentSelectedId],
+    s.currentSelectedId,
     s.icosphereEditor,
     s.minIcoSphereDiameter,
     s.maxIcoSphereDiameter,
@@ -186,7 +188,7 @@ export const IcoSphereEditor = () => {
 
     //check if currentSelectedMesh (babylon Mesh) has been created from CreateIcoSphere
     //if so, move the above ring and arrow on the position of that mesh
-  }, [currentSelected, icosphereEditor]);
+  }, [currentSelectedId, icosphereEditor]);
 
   /* adjust diameter */
   useEffect(() => {
@@ -269,7 +271,7 @@ export const IcoSphereEditor = () => {
   }, [
     scene,
     icosphereEditor,
-    currentSelected,
+    currentSelectedId,
     minIcoSphereDiameter,
     maxIcoSphereDiameter,
   ]);
@@ -399,7 +401,7 @@ export const IcoSphereEditor = () => {
   }, [
     scene,
     icosphereEditor,
-    currentSelected,
+    currentSelectedId,
     minIcoSphereSubdivision,
     maxIcoSphereSubdivision,
   ]);
