@@ -7,6 +7,8 @@ import {
   Vector3,
   PointerDragBehavior,
   Matrix,
+  ActionManager,
+  ExecuteCodeAction,
 } from "babylonjs";
 import { getStore, setStore, useStore } from "./stores/store";
 import { createArrow } from "./createArrow";
@@ -14,15 +16,7 @@ import { setVisibility } from "./setVisibility";
 
 /* @ts-ignore */
 function updateIcoSphereEditor(icosphereEditor, currentSelectedMesh) {
-  const {
-    ring,
-    ctrlRing,
-    arrowShaft,
-    ctrlArrowShaft,
-    arrowTipTop,
-    arrowTipBot,
-    group,
-  } = icosphereEditor;
+  const { ring, ctrlRing, arrowTipTop, arrowTipBot, group } = icosphereEditor;
 
   // Get the bounding box of the icosphere
   currentSelectedMesh.computeWorldMatrix(true);
@@ -35,24 +29,17 @@ function updateIcoSphereEditor(icosphereEditor, currentSelectedMesh) {
   // Calculate the full height
   const icosphereHeight = 2 * boundingBox.extendSizeWorld.y;
 
-  // Calculate scaling factors (10% bigger)
-  const ringScaleFactor = 1.1 * icosphereDiameter;
-  const arrowScaleFactor =
-    (1.1 * icosphereHeight) / (arrowShaft.scaling.y + arrowTipTop.scaling.y);
-
   // Scale the ring and arrow
-  ring.scaling.set(ringScaleFactor, ringScaleFactor, ringScaleFactor);
+  ring.scaling.set(
+    icosphereDiameter * 1.1,
+    icosphereDiameter * 1.1,
+    icosphereDiameter * 1.1
+  );
   ctrlRing.scaling.copyFrom(ring.scaling);
 
-  arrowShaft.scaling.y *= arrowScaleFactor;
-  arrowTipTop.scaling.y *= arrowScaleFactor;
-  arrowTipBot.scaling.y *= arrowScaleFactor;
-
-  ctrlArrowShaft.scaling.copyFrom(arrowShaft.scaling);
-
   // Adjust arrow tip position
-  arrowTipTop.position.y = (arrowShaft.scaling.y + arrowTipTop.scaling.y) / 2;
-  arrowTipBot.position.y = (-arrowShaft.scaling.y - arrowTipBot.scaling.y) / 2;
+  arrowTipTop.position.y = (icosphereHeight + arrowTipTop.scaling.y) / 2;
+  arrowTipBot.position.y = (-icosphereHeight - arrowTipBot.scaling.y) / 2;
 
   // Move the ring and arrow to the position of the icosphere
   group.position.copyFrom(currentSelectedMesh.position);
@@ -115,35 +102,29 @@ export const IcoSphereEditor = () => {
       2,
       0
     );
+    arrowShaft.dispose();
+    ctrlArrowShaft.dispose();
     const arrowTipBot = arrowTipTop.clone();
     arrowTipBot.rotation.set(-Math.PI, 0, 0);
 
     //render the arrow on top
-    arrowShaft.renderingGroupId = 1;
-    ctrlArrowShaft.renderingGroupId = 1;
     arrowTipTop.renderingGroupId = 1;
     arrowTipBot.renderingGroupId = 1;
 
     // Set the group as the parent of the ring, shaft, and tip
     ring.parent = group;
     ctrlRing.parent = group;
-    arrowShaft.parent = group;
-    ctrlArrowShaft.parent = group;
     arrowTipTop.parent = group;
     arrowTipBot.parent = group;
 
     ring.isEditorMesh = true;
     ctrlRing.isEditorMesh = true;
-    arrowShaft.isEditorMesh = true;
-    ctrlArrowShaft.isEditorMesh = true;
     arrowTipTop.isEditorMesh = true;
     arrowTipBot.isEditorMesh = true;
 
     /* for onPointerMove event */
     ring.enablePointerMoveEvents = true;
     ctrlRing.enablePointerMoveEvents = true;
-    arrowShaft.enablePointerMoveEvents = true;
-    ctrlArrowShaft.enablePointerMoveEvents = true;
     arrowTipTop.enablePointerMoveEvents = true;
     arrowTipBot.enablePointerMoveEvents = true;
 
@@ -152,7 +133,6 @@ export const IcoSphereEditor = () => {
       scene
     );
     transparentMaterial.alpha = 0;
-    ctrlArrowShaft.material = transparentMaterial;
     ctrlRing.material = transparentMaterial;
 
     setVisibility(group, false);
@@ -162,8 +142,6 @@ export const IcoSphereEditor = () => {
         group,
         ring,
         ctrlRing,
-        arrowShaft,
-        ctrlArrowShaft,
         arrowTipTop,
         arrowTipBot,
       },
@@ -173,8 +151,6 @@ export const IcoSphereEditor = () => {
       // Dispose of the meshes and materials
       ring.dispose();
       ctrlRing.dispose();
-      arrowShaft.dispose();
-      ctrlArrowShaft.dispose();
       arrowTipTop.dispose();
       arrowTipBot.dispose();
       ringMaterial.dispose();
@@ -279,111 +255,60 @@ export const IcoSphereEditor = () => {
   useEffect(() => {
     if (!scene || !icosphereEditor || !currentSelected) return;
     const currentSelectedMesh = currentSelected.mesh;
-    const { ctrlArrowShaft } = icosphereEditor;
-
-    // Initialize the drag behavior
-    const pointerDragBehavior = new PointerDragBehavior({
-      dragAxis: new Vector3(0, 1, 0),
-    });
+    const { arrowTipBot, arrowTipTop } = icosphereEditor;
 
     // Attach drag behavior to the ring
-    ctrlArrowShaft.addBehavior(pointerDragBehavior);
+    if (!arrowTipBot.actionManager) {
+      arrowTipBot.actionManager = new ActionManager(scene);
+    }
+    if (!arrowTipTop.actionManager) {
+      arrowTipTop.actionManager = new ActionManager(scene);
+    }
 
-    // Variables to store initial positions and scaling
-    let initialPointerY = 0;
-    let initialScale = 0;
-    let arrowCenterY = 0;
-
-    // On drag start
-    pointerDragBehavior.onDragStartObservable.add((event) => {
-      initialPointerY = event.dragPlanePoint.y;
-      initialScale = ctrlArrowShaft.scaling.y; // Store the initial scale of the ring
-
-      const ringWorldPosition = ctrlArrowShaft.getAbsolutePosition();
-      // Use the X-coordinate of the world position
-      arrowCenterY = ringWorldPosition.y;
-    });
-
-    // On drag
-    pointerDragBehavior.onDragObservable.add((event) => {
-      const currentPointerY = event.dragPlanePoint.y;
-      let dragDistance = Math.abs(currentPointerY - initialPointerY);
-
-      // Check if dragging is toward or away from the center
-      const isDraggingTowardCenter =
-        (initialPointerY > arrowCenterY && currentPointerY < initialPointerY) ||
-        (initialPointerY < arrowCenterY && currentPointerY > initialPointerY);
-      if (isDraggingTowardCenter) {
-        dragDistance *= -1;
-      } else {
-        dragDistance *= 1;
-      }
-
-      // Calculate the new scale based on drag distance
-      const newSubdivision = Math.min(
-        Math.max(
-          Math.round(initialScale + dragDistance * 5),
-          minIcoSphereSubdivision
-        ),
-        maxIcoSphereSubdivision
-      ); // Prevent negative scaling
-
-      // Optionally, update the icosphere's diameter as well
-      currentSelectedMesh.scaling.y = newSubdivision;
-
-      currentSelectedMesh.onPropertyChanged(
-        "subdivisions",
-        null,
-        newSubdivision
-      );
-
-      const { allMeshes } = getStore();
-      updateIcoSphereEditor(icosphereEditor, allMeshes[currentSelectedId].mesh);
-    });
-
-    pointerDragBehavior.onDragEndObservable.add((event) => {
-      const { ctrlArrowShaft } = icosphereEditor;
-      ctrlArrowShaft.position.set(0, 0, 0);
-    });
-
-    //implement custom pointer logic to trigger startDrag since it's located inside the icosphere
-    const onPointerDown = (evt) => {
-      const pickRay = scene.createPickingRay(
-        scene.pointerX,
-        scene.pointerY,
-        Matrix.Identity(),
-        scene.activeCamera
-      );
-      const allHits = scene.multiPickWithRay(pickRay);
-
-      let ctrlArrowShaftIsHit = false;
-      if (allHits) {
-        for (let i = 0; i < allHits.length; i++) {
-          if (allHits[i].pickedMesh === ctrlArrowShaft) {
-            ctrlArrowShaftIsHit = true;
-            break;
-          }
-        }
-      }
-
-      if (ctrlArrowShaftIsHit) {
-        // ctrlArrowShaft is one of the meshes hit by the ray
-        const pointerId = evt.pointerId;
-        const startPickedPoint = allHits.find(
-          (hit) => hit.pickedMesh === ctrlArrowShaft
-        )?.pickedPoint;
-        pointerDragBehavior.startDrag(pointerId, pickRay, startPickedPoint);
-      }
-    };
-
-    document.addEventListener("pointerdown", onPointerDown);
+    // Define an action for pointer down (click)
+    arrowTipBot.actionManager.registerAction(
+      new ExecuteCodeAction(ActionManager.OnPickDownTrigger, function () {
+        currentSelectedMesh.onPropertyChanged(
+          "subdivisions",
+          null,
+          Math.min(
+            Math.max(
+              currentSelected.parameters.subdivisions - 1,
+              minIcoSphereSubdivision
+            ),
+            maxIcoSphereSubdivision
+          )
+        );
+        const { allMeshes } = getStore();
+        updateIcoSphereEditor(
+          icosphereEditor,
+          allMeshes[currentSelectedId].mesh
+        );
+      })
+    );
+    arrowTipTop.actionManager.registerAction(
+      new ExecuteCodeAction(ActionManager.OnPickDownTrigger, function () {
+        currentSelectedMesh.onPropertyChanged(
+          "subdivisions",
+          null,
+          Math.min(
+            Math.max(
+              currentSelected.parameters.subdivisions + 1,
+              minIcoSphereSubdivision
+            ),
+            maxIcoSphereSubdivision
+          )
+        );
+        const { allMeshes } = getStore();
+        updateIcoSphereEditor(
+          icosphereEditor,
+          allMeshes[currentSelectedId].mesh
+        );
+      })
+    );
 
     // Cleanup
-    return () => {
-      ctrlArrowShaft.removeBehavior(pointerDragBehavior);
-      scene.onPointerDown = null;
-      document.removeEventListener("pointerdown", onPointerDown);
-    };
+    return () => {};
   }, [
     scene,
     icosphereEditor,

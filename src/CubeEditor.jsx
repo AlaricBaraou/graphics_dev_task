@@ -23,6 +23,8 @@ function updateCubeEditor(cubeEditor, currentSelectedMesh) {
     arrowTipTop,
     group,
     heightArrowGroup,
+    widthArrowGroup,
+    depthArrowGroup,
   } = cubeEditor;
 
   // Get the bounding box of the cube
@@ -31,13 +33,14 @@ function updateCubeEditor(cubeEditor, currentSelectedMesh) {
   const boundingBox = boundingInfo.boundingBox;
 
   // Calculate the full height
+  const cubeWidth = 2 * boundingBox.extendSizeWorld.x;
   const cubeHeight = 2 * boundingBox.extendSizeWorld.y;
-
-  // Calculate scaling factors
-  const arrowScaleFactor = cubeHeight / heightArrowGroup.scaling.y;
+  const cubeDepth = 2 * boundingBox.extendSizeWorld.z;
 
   // Scale the arrows
-  heightArrowGroup.scaling.y *= arrowScaleFactor;
+  widthArrowGroup.scaling.y = cubeWidth;
+  heightArrowGroup.scaling.y = cubeHeight;
+  depthArrowGroup.scaling.y = cubeDepth;
 
   // Move the ring and arrow to the position of the cube
   group.position.copyFrom(currentSelectedMesh.position);
