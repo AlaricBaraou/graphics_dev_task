@@ -42,6 +42,7 @@ ul {
 
 ul li {
   color: #fff;
+  cursor: pointer;
 }
 
 ul li.selected {
