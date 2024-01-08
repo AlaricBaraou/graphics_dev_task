@@ -10,9 +10,9 @@ import {
   ActionManager,
   ExecuteCodeAction,
 } from "babylonjs";
-import { getStore, setStore, useStore } from "./stores/store";
-import { createArrow } from "./createArrow";
-import { setVisibility } from "./setVisibility";
+import { getStore, setStore, useStore } from "../stores/store";
+import { createArrow } from "../helpers/createArrow";
+import { setVisibility } from "../helpers/setVisibility";
 
 /* @ts-ignore */
 function updateIcoSphereEditor(icosphereEditor, currentSelectedMesh) {

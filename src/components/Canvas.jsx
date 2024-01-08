@@ -10,7 +10,7 @@ import {
   Quaternion,
   HighlightLayer,
 } from "babylonjs";
-import { getStore, setStore } from "./stores/store";
+import { getStore, setStore } from "../stores/store";
 
 function prepareScene(canvas, scene) {
   // Camera

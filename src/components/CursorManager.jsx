@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { useStore } from "./stores/store";
+import { useStore } from "../stores/store";
 
 export const CursorManager = () => {
   const [scene, canvas] = useStore((s) => [s.scene, s.canvas]);

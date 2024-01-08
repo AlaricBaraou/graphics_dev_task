@@ -1,7 +1,7 @@
 import { useEffect } from "react";
-import { getStore, useStore } from "./stores/store";
+import { getStore, useStore } from "../stores/store";
 import * as dat from "dat.gui";
-import { applyBouncing } from "./applyBouncing";
+import { applyBouncing } from "../helpers/applyBouncing";
 
 const editorConfig = {
   cube: {

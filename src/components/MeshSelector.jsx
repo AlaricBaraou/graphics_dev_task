@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { HighlightLayer, Mesh } from "babylonjs";
-import { setStore, useStore } from "./stores/store";
+import { setStore, useStore } from "../stores/store";
 
 export const MeshSelector = () => {
   /* @ts-ignore */

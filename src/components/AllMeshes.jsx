@@ -1,5 +1,5 @@
-import { SingleMesh } from "./SingleMesh";
-import { useStore } from "./stores/store";
+import { SingleMesh } from "./SingleMesh.jsx";
+import { useStore } from "../stores/store";
 
 export const AllMeshes = () => {
   const scene = useStore((s) => s.scene);

@@ -8,9 +8,9 @@ import {
   PointerDragBehavior,
   Matrix,
 } from "babylonjs";
-import { getStore, setStore, useStore } from "./stores/store";
-import { createArrow } from "./createArrow";
-import { setVisibility } from "./setVisibility";
+import { getStore, setStore, useStore } from "../stores/store";
+import { createArrow } from "../helpers/createArrow";
+import { setVisibility } from "../helpers/setVisibility";
 import { IndexType } from "typescript";
 
 /* @ts-ignore */

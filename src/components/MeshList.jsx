@@ -1,4 +1,4 @@
-import { getStore, useStore } from "./stores/store";
+import { getStore, useStore } from "../stores/store";
 
 export const MeshList = () => {
   const allMeshes = useStore((s) => s.allMeshes);

@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { Color3, MeshBuilder, Quaternion } from "babylonjs";
-import { getStore, useStore } from "./stores/store";
+import { getStore, useStore } from "../stores/store";
 
 const typeToMethod = {
   cube: "CreateBox",
