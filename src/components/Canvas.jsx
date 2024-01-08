@@ -1,21 +1,24 @@
 import { useEffect, useRef } from "react";
 import {
-  Mesh,
-  Engine,
-  Scene,
   ArcRotateCamera,
+  DirectionalLight,
+  Engine,
   HemisphericLight,
+  Scene,
+  ShadowGenerator,
   Vector3,
-  MeshBuilder,
-  Quaternion,
-  HighlightLayer,
 } from "babylonjs";
 import { getStore, setStore } from "../stores/store";
 
+/**
+ * Prepares the scene with camera and lighting.
+ * @param {object} canvas - The canvas element.
+ * @param {Scene} scene - The BabylonJS scene.
+ */
 function prepareScene(canvas, scene) {
-  // Camera
+  // Initialize camera with ArcRotateCamera for a 3D rotating perspective
   const camera = new ArcRotateCamera(
-    "camera",
+    "camera1",
     Math.PI / 2,
     Math.PI / 2.5,
     4,
@@ -24,8 +27,25 @@ function prepareScene(canvas, scene) {
   );
   camera.attachControl(canvas, true);
 
-  // Light
-  new HemisphericLight("light", new Vector3(0.5, 1, 0.8).normalize(), scene);
+  // Set up lighting with HemisphericLight for a wide, soft light
+  const hemisphericLight = new HemisphericLight(
+    "light1",
+    new Vector3(0.5, 1, 0.8).normalize(),
+    scene
+  );
+  hemisphericLight.intensity = 0.5;
+
+  // Use a DirectionalLight for shadows
+  const directionalLight = new DirectionalLight(
+    "dirLight",
+    new Vector3(100, -120, -100),
+    scene
+  );
+  directionalLight.intensity = 0.5;
+
+  // Create a shadow generator
+  const shadowGenerator = new ShadowGenerator(1024, directionalLight);
+  setStore({ shadowGenerator: shadowGenerator });
 }
 
 export const Canvas = ({
@@ -38,54 +58,44 @@ export const Canvas = ({
   children,
   ...props
 }) => {
-  const reactCanvas = useRef(null);
+  const reactCanvasRef = useRef(null);
 
-  // set up basic engine and scene
   useEffect(() => {
-    const { current: canvas } = reactCanvas;
+    const canvasElement = reactCanvasRef.current;
+    if (!canvasElement) return;
 
-    if (!canvas) return;
-
-    const engine = new Engine(
-      canvas,
+    const babylonEngine = new Engine(
+      canvasElement,
       antialias,
       engineOptions,
       adaptToDeviceRatio
     );
-    const scene = new Scene(engine, sceneOptions);
+    const babylonScene = new Scene(babylonEngine, sceneOptions);
 
-    setStore({
-      scene,
-      canvas,
-    });
+    setStore({ scene: babylonScene, canvas: canvasElement });
 
-    prepareScene(canvas, scene);
+    prepareScene(canvasElement, babylonScene);
 
-    if (scene.isReady()) {
-      onSceneReady(scene);
+    if (babylonScene.isReady()) {
+      onSceneReady(babylonScene);
     } else {
-      scene.onReadyObservable.addOnce((scene) => onSceneReady(scene));
+      babylonScene.onReadyObservable.addOnce((scene) => onSceneReady(scene));
     }
 
-    engine.runRenderLoop(() => {
-      if (typeof onRender === "function") onRender(scene);
-      scene.render();
+    babylonEngine.runRenderLoop(() => {
+      if (typeof onRender === "function") onRender(babylonScene);
+      babylonScene.render();
     });
 
-    const resize = () => {
-      scene.getEngine().resize();
+    const handleResize = () => {
+      babylonScene.getEngine().resize();
     };
 
-    if (window) {
-      window.addEventListener("resize", resize);
-    }
+    window.addEventListener("resize", handleResize);
 
     return () => {
-      scene.getEngine().dispose();
-
-      if (window) {
-        window.removeEventListener("resize", resize);
-      }
+      babylonScene.getEngine().dispose();
+      window.removeEventListener("resize", handleResize);
     };
   }, [
     antialias,
@@ -98,7 +108,7 @@ export const Canvas = ({
 
   return (
     <>
-      <canvas ref={reactCanvas} {...props}></canvas>
+      <canvas ref={reactCanvasRef} {...props}></canvas>
       {children}
     </>
   );

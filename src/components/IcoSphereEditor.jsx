@@ -6,15 +6,20 @@ import {
   Mesh,
   Vector3,
   PointerDragBehavior,
-  Matrix,
   ActionManager,
   ExecuteCodeAction,
+  PointerEventTypes,
+  Matrix,
 } from "babylonjs";
 import { getStore, setStore, useStore } from "../stores/store";
 import { createArrow } from "../helpers/createArrow";
 import { setVisibility } from "../helpers/setVisibility";
 
-/* @ts-ignore */
+/**
+ * Update the cube editor UI elements based on the selected mesh.
+ * @param {Object} icosphereEditor - The icosphere editor object containing UI elements.
+ * @param {Mesh} selectedMesh - The currently selected mesh.
+ */
 function updateIcoSphereEditor(icosphereEditor, currentSelectedMesh) {
   const { ring, ctrlRing, arrowTipTop, arrowTipBot, group } = icosphereEditor;
 
@@ -128,12 +133,7 @@ export const IcoSphereEditor = () => {
     arrowTipTop.enablePointerMoveEvents = true;
     arrowTipBot.enablePointerMoveEvents = true;
 
-    const transparentMaterial = new StandardMaterial(
-      "transparentMaterial",
-      scene
-    );
-    transparentMaterial.alpha = 0;
-    ctrlRing.material = transparentMaterial;
+    ctrlRing.visibility = 0;
 
     setVisibility(group, false);
 
@@ -164,7 +164,7 @@ export const IcoSphereEditor = () => {
   useEffect(() => {
     if (!currentSelected || !icosphereEditor) return;
 
-    const isIcoSphere = currentSelected.type === "icosphere"; // Example condition
+    const isIcoSphere = currentSelected.type === "icosphere";
     const currentSelectedMesh = currentSelected.mesh;
     if (isIcoSphere) {
       setVisibility(icosphereEditor.group, true);
@@ -226,7 +226,7 @@ export const IcoSphereEditor = () => {
       const newDiameter = Math.min(
         Math.max(initialScale + dragDistance, minIcoSphereDiameter),
         maxIcoSphereDiameter
-      ); // Prevent negative scaling
+      );
 
       currentSelectedMesh.onPropertyChanged("radius", null, newDiameter);
 
@@ -251,7 +251,7 @@ export const IcoSphereEditor = () => {
     maxIcoSphereDiameter,
   ]);
 
-  /* adjust height */
+  /* adjust subdivisions */
   useEffect(() => {
     if (!scene || !icosphereEditor || !currentSelected) return;
     const currentSelectedMesh = currentSelected.mesh;
@@ -265,50 +265,63 @@ export const IcoSphereEditor = () => {
       arrowTipTop.actionManager = new ActionManager(scene);
     }
 
-    // Define an action for pointer down (click)
-    arrowTipBot.actionManager.registerAction(
-      new ExecuteCodeAction(ActionManager.OnPickDownTrigger, function () {
-        currentSelectedMesh.onPropertyChanged(
-          "subdivisions",
-          null,
-          Math.min(
-            Math.max(
-              currentSelected.parameters.subdivisions - 1,
-              minIcoSphereSubdivision
-            ),
-            maxIcoSphereSubdivision
-          )
+    function onPointerDown(pointerInfo) {
+      if (pointerInfo.type === PointerEventTypes.POINTERDOWN) {
+        // Perform a raycast to get the mesh list under the cursor
+        const pickRay = scene.createPickingRay(
+          scene.pointerX,
+          scene.pointerY,
+          Matrix.Identity(),
+          scene.activeCamera
         );
-        const { allMeshes } = getStore();
-        updateIcoSphereEditor(
-          icosphereEditor,
-          allMeshes[currentSelectedId].mesh
-        );
-      })
-    );
-    arrowTipTop.actionManager.registerAction(
-      new ExecuteCodeAction(ActionManager.OnPickDownTrigger, function () {
-        currentSelectedMesh.onPropertyChanged(
-          "subdivisions",
-          null,
-          Math.min(
-            Math.max(
-              currentSelected.parameters.subdivisions + 1,
-              minIcoSphereSubdivision
-            ),
-            maxIcoSphereSubdivision
-          )
-        );
-        const { allMeshes } = getStore();
-        updateIcoSphereEditor(
-          icosphereEditor,
-          allMeshes[currentSelectedId].mesh
-        );
-      })
-    );
+        const allHits = scene
+          .multiPickWithRay(pickRay)
+          .map((e) => e.pickedMesh);
+        // Now, check if arrowTipBot or arrowTipTop is among the picked meshes
+        if (allHits.includes(arrowTipBot)) {
+          currentSelectedMesh.onPropertyChanged(
+            "subdivisions",
+            null,
+            Math.min(
+              Math.max(
+                currentSelected.parameters.subdivisions - 1,
+                minIcoSphereSubdivision
+              ),
+              maxIcoSphereSubdivision
+            )
+          );
+          const { allMeshes } = getStore();
+          updateIcoSphereEditor(
+            icosphereEditor,
+            allMeshes[currentSelectedId].mesh
+          );
+        }
+        if (allHits.includes(arrowTipTop)) {
+          currentSelectedMesh.onPropertyChanged(
+            "subdivisions",
+            null,
+            Math.min(
+              Math.max(
+                currentSelected.parameters.subdivisions + 1,
+                minIcoSphereSubdivision
+              ),
+              maxIcoSphereSubdivision
+            )
+          );
+          const { allMeshes } = getStore();
+          updateIcoSphereEditor(
+            icosphereEditor,
+            allMeshes[currentSelectedId].mesh
+          );
+        }
+      }
+    }
+    scene.onPointerObservable.add(onPointerDown);
 
     // Cleanup
-    return () => {};
+    return () => {
+      scene.onPointerObservable.remove(onPointerDown);
+    };
   }, [
     scene,
     icosphereEditor,

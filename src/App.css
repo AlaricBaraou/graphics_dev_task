@@ -35,18 +35,19 @@
   color: #61dafb;
 }
 
-ul {
+#itemlist {
   list-style: none;
   text-align: left;
 }
 
-ul li {
+#itemlist li {
   color: #fff;
   cursor: pointer;
+  font-size: 18px;
 }
 
-ul li.selected {
-  color: red;
+#itemlist li.selected {
+  color: rgb(48, 206, 48);
 }
 
 @keyframes App-logo-spin {

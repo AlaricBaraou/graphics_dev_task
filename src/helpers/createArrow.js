@@ -1,21 +1,24 @@
 import { MeshBuilder, Mesh, StandardMaterial } from "babylonjs";
 
+/**
+ * Creates an arrow mesh with control features for editing in BabylonJS.
+ * @param {Scene} scene - The BabylonJS scene.
+ * @param {StandardMaterial} arrowMaterial - The material to apply to the arrow.
+ * @param {Vector3} rotation - The rotation of the arrow.
+ * @param {number} height - The height of the arrow shaft.
+ * @param {number} position - The position of the arrow shaft.
+ * @returns {[Mesh, Mesh, Mesh, Mesh]} - The arrow shaft, control shaft, arrow tip, and the group they belong to.
+ */
 export function createArrow(scene, arrowMaterial, rotation, height, position) {
   // Create a parent group
   const group = new Mesh("group", scene);
-
-  const transparentMaterial = new StandardMaterial(
-    "transparentMaterial",
-    scene
-  );
-  transparentMaterial.alpha = 0;
 
   const ctrlArrowShaft = MeshBuilder.CreateCylinder(
     "ctrlShaft",
     { diameter: 0.05, height: height },
     scene
   );
-  ctrlArrowShaft.material = transparentMaterial;
+  ctrlArrowShaft.visibility = 0;
   const arrowShaft = MeshBuilder.CreateCylinder(
     "shaft",
     { diameter: 0.05, height: height },

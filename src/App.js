@@ -1,7 +1,7 @@
 import "./App.css";
 import { Canvas } from "./components/Canvas";
 import { MeshSelector } from "./components/MeshSelector";
-import { MeshList } from "./components/MeshList";
+import { MeshList } from "./components/dom/MeshList";
 import { CylinderEditor } from "./components/CylinderEditor";
 import { CubeEditor } from "./components/CubeEditor";
 import { MeshProperties } from "./components/MeshProperties";

@@ -2,7 +2,6 @@ import { useEffect } from "react";
 import {
   Color3,
   StandardMaterial,
-  MeshBuilder,
   Mesh,
   Vector3,
   PointerDragBehavior,
@@ -11,21 +10,15 @@ import {
 import { getStore, setStore, useStore } from "../stores/store";
 import { createArrow } from "../helpers/createArrow";
 import { setVisibility } from "../helpers/setVisibility";
-import { IndexType } from "typescript";
 
-/* @ts-ignore */
+/**
+ * Update the cube editor UI elements based on the selected mesh.
+ * @param {Object} cubeEditor - The cube editor object containing UI elements.
+ * @param {Mesh} selectedMesh - The currently selected mesh.
+ */
 function updateCubeEditor(cubeEditor, currentSelectedMesh) {
-  const {
-    ring,
-    ctrlRing,
-    heightArrowShaft,
-    heightCtrlArrowShaft,
-    arrowTipTop,
-    group,
-    heightArrowGroup,
-    widthArrowGroup,
-    depthArrowGroup,
-  } = cubeEditor;
+  const { group, heightArrowGroup, widthArrowGroup, depthArrowGroup } =
+    cubeEditor;
 
   // Get the bounding box of the cube
   currentSelectedMesh.computeWorldMatrix(true);
@@ -57,6 +50,17 @@ const axisToParam = {
   y: "height",
   z: "depth",
 };
+
+/**
+ * Custom hook to update an axis of the cube editor.
+ * @param {Scene} scene - The BabylonJS scene.
+ * @param {Object} cubeEditor - The cube editor object.
+ * @param {Object} selectedMeshData - Data of the currently selected mesh.
+ * @param {string} selectedMeshId - ID of the currently selected mesh.
+ * @param {number} min - Minimum value for scaling.
+ * @param {number} max - Maximum value for scaling.
+ * @param {string} axis - The axis to update ('x', 'y', or 'z').
+ */
 const useUpdateAxis = (
   scene,
   cubeEditor,
@@ -115,7 +119,7 @@ const useUpdateAxis = (
       const newScale = Math.min(
         Math.max(initialScale + dragDistance, min),
         max
-      ); // Prevent negative scaling
+      );
 
       currentSelectedMesh.scaling[axis] = newScale;
 
@@ -307,7 +311,7 @@ export const CubeEditor = () => {
   useEffect(() => {
     if (!currentSelected || !cubeEditor) return;
 
-    const isCube = currentSelected.type === "cube"; // Example condition
+    const isCube = currentSelected.type === "cube";
     const currentSelectedMesh = currentSelected.mesh;
     if (isCube) {
       setVisibility(cubeEditor.group, true);
@@ -315,9 +319,6 @@ export const CubeEditor = () => {
     } else {
       setVisibility(cubeEditor.group, false);
     }
-
-    //check if currentSelectedMesh (babylon Mesh) has been created from CreateCylinder
-    //if so, move the above ring and arrow on the position of that mesh
   }, [currentSelectedId, cubeEditor]);
 
   useUpdateAxis(

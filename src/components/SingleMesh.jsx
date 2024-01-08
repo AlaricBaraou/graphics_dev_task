@@ -6,13 +6,16 @@ const typeToMethod = {
   cube: "CreateBox",
   icosphere: "CreateIcoSphere",
   cylinder: "CreateCylinder",
+  plane: "CreatePlane",
 };
 
-function simulateBounceFall() {}
-
+/**
+ * This component handles the creation and updating of a single mesh in the scene.
+ */
 export const SingleMesh = ({ meshId }) => {
   const updateMesh = useStore((s) => s.updateMesh);
   const scene = useStore((s) => s.scene);
+  const shadowGenerator = useStore((s) => s.shadowGenerator);
   const meshParams = useStore((s) => s.allMeshes[meshId]);
   const isSelected = useStore((s) => s.allMeshes[meshId].selected);
 
@@ -37,6 +40,13 @@ export const SingleMesh = ({ meshId }) => {
     }
 
     mesh.type = meshParams.type;
+    mesh.enablePointerMoveEvents = meshParams.selectable;
+    mesh.selectable = meshParams.selectable;
+    mesh.receiveShadows = true;
+
+    if (meshParams.castShadow) {
+      shadowGenerator.addShadowCaster(mesh);
+    }
 
     updateMesh(meshParams.id, {
       mesh: mesh,
@@ -45,18 +55,30 @@ export const SingleMesh = ({ meshId }) => {
     return () => {
       mesh.dispose();
     };
-  }, [meshParams.parameters]);
+  }, [
+    meshParams.parameters,
+    meshParams.id,
+    meshParams.name,
+    meshParams.position,
+    meshParams.rotation,
+    meshParams.type,
+    scene,
+    updateMesh,
+  ]);
 
   useEffect(() => {
     if (!isSelected) return;
     const { highlightLayer } = getStore();
 
-    highlightLayer.addMesh(meshParams.mesh, Color3.White());
+    highlightLayer.addMesh(meshParams.mesh, Color3.Green());
+    meshParams.mesh.selected = true;
 
     return () => {
+      // Remove the mesh from the highlight layer on cleanup
       highlightLayer.removeMesh(meshParams.mesh);
+      meshParams.mesh.selected = false;
     };
-  }, [isSelected]);
+  }, [isSelected, meshParams.mesh]);
 
   // simulation at runtime
   //   useEffect(() => {

@@ -12,7 +12,11 @@ import { getStore, setStore, useStore } from "../stores/store";
 import { createArrow } from "../helpers/createArrow";
 import { setVisibility } from "../helpers/setVisibility";
 
-/* @ts-ignore */
+/**
+ * Update the cube editor UI elements based on the selected mesh.
+ * @param {Object} cylinderEditor - The cylinder editor object containing UI elements.
+ * @param {Mesh} selectedMesh - The currently selected mesh.
+ */
 function updateCylinderEditor(cylinderEditor, currentSelectedMesh) {
   const {
     ring,
@@ -147,13 +151,8 @@ export const CylinderEditor = () => {
     arrowTipTop.enablePointerMoveEvents = true;
     arrowTipBot.enablePointerMoveEvents = true;
 
-    const transparentMaterial = new StandardMaterial(
-      "transparentMaterial",
-      scene
-    );
-    transparentMaterial.alpha = 0;
-    ctrlArrowShaft.material = transparentMaterial;
-    ctrlRing.material = transparentMaterial;
+    ctrlArrowShaft.visibility = 0;
+    ctrlRing.visibility = 0;
 
     setVisibility(group, false);
 
@@ -190,7 +189,7 @@ export const CylinderEditor = () => {
   useEffect(() => {
     if (!currentSelected || !cylinderEditor) return;
 
-    const isCylinder = currentSelected.type === "cylinder"; // Example condition
+    const isCylinder = currentSelected.type === "cylinder";
     const currentSelectedMesh = currentSelected.mesh;
     if (isCylinder) {
       setVisibility(cylinderEditor.group, true);
@@ -227,9 +226,7 @@ export const CylinderEditor = () => {
       initialPointerX = event.dragPlanePoint.x;
       initialScale = ctrlRing.scaling.x; // Store the initial scale of the ring
 
-      // Get the absolute world position of the ctrlRing mesh
       const ringWorldPosition = ctrlRing.getAbsolutePosition();
-      // Use the X-coordinate of the world position
       ringCenterX = ringWorldPosition.x;
     });
 
@@ -252,7 +249,7 @@ export const CylinderEditor = () => {
       const newScale = Math.min(
         Math.max(initialScale + dragDistance, minCylinderDiameter),
         maxCylinderDiameter
-      ); // Prevent negative scaling
+      );
 
       currentSelectedMesh.onPropertyChanged("diameter", null, newScale);
 
@@ -325,7 +322,7 @@ export const CylinderEditor = () => {
       const newScale = Math.min(
         Math.max(initialHeight + dragDistance, minCylinderHeight),
         maxCylinderHeight
-      ); // Prevent negative scaling
+      );
 
       currentSelectedMesh.onPropertyChanged("height", null, newScale);
 

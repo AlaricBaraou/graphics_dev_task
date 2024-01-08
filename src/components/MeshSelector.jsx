@@ -3,7 +3,6 @@ import { HighlightLayer, Mesh } from "babylonjs";
 import { setStore, useStore } from "../stores/store";
 
 export const MeshSelector = () => {
-  /* @ts-ignore */
   const [scene, canvas, setSelected] = useStore((s) => [
     s.scene,
     s.canvas,
@@ -24,7 +23,11 @@ export const MeshSelector = () => {
     const doPick = () => {
       const pickResult = scene.pick(scene.pointerX, scene.pointerY);
 
-      if (pickResult && pickResult.pickedMesh instanceof Mesh) {
+      if (
+        pickResult &&
+        pickResult.pickedMesh instanceof Mesh &&
+        pickResult.pickedMesh.selectable
+      ) {
         if (pickResult.pickedMesh.isEditorMesh) return;
         setSelected(pickResult.pickedMesh.id, true);
       } else {
